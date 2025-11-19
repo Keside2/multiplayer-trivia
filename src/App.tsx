@@ -492,7 +492,7 @@ export default function App() {
 
         // wait for countdown to finish
         await new Promise<void>((resolve) => {
-          startCountdown(3, (n) => {}, resolve);
+          startCountdown(3, (_n) => {}, resolve);
         });
 
         // clear countdown in DB
