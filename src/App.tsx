@@ -328,6 +328,50 @@ export default function App() {
     };
   }, [roomId, userId]);
 
+  useEffect(() => {
+    if (!roomId) return;
+
+    const countdownRef = ref(db, `rooms/${roomId}/nextRoundCountdown`);
+    const unsub = onValue(countdownRef, (snap) => {
+      const data = snap.val();
+      if (!data) {
+        setShowNextRoundOverlay(false);
+        setNextRoundCountdown(null);
+        return;
+      }
+
+      const { startAt, duration, correctAnswer } = data;
+      setShowNextRoundOverlay(true);
+      setLastResults({ correctAnswer }); // reuse lastResults for overlay
+
+      const endAt = startAt + duration * 1000;
+
+      // Clear any previous interval first
+      let intervalId: number | null = null;
+
+      const tick = () => {
+        const now = Date.now();
+        const sec = Math.max(0, Math.ceil((endAt - now) / 1000)); // you can also try Math.floor for smoother decrement
+        setNextRoundCountdown(sec);
+
+        if (sec <= 0 && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+          setShowNextRoundOverlay(false);
+        }
+      };
+
+      tick(); // call immediately to avoid 0 at start
+      intervalId = setInterval(tick, 200);
+
+      return () => {
+        if (intervalId) clearInterval(intervalId);
+      };
+    });
+
+    return () => unsub();
+  }, [roomId]);
+
   // Update countdownNumber locally (clients will observe countdown node in DB)
   useEffect(() => {
     if (!countdown) return;
@@ -440,12 +484,19 @@ export default function App() {
       setLoadingQuestion(true);
       playSound("newround");
 
-      // Only first round has 3..2..1 countdown
+      // --- SYNCED 3..2..1 countdown for all clients ---
       if (idx === 0) {
+        const countdownRef = ref(db, `rooms/${roomId}/countdown`);
+        const startAt = Date.now();
+        await set(countdownRef, { startAt, duration: 3 });
+
+        // wait for countdown to finish
         await new Promise<void>((resolve) => {
-          startCountdown(3, setCountdownNumber, resolve);
+          startCountdown(3, (n) => {}, resolve);
         });
-        setCountdownNumber(null);
+
+        // clear countdown in DB
+        await remove(countdownRef);
       }
 
       // Prepare next question
@@ -570,22 +621,27 @@ export default function App() {
         toast.info("🏁 Game over!");
       } else {
         // ✅ Show correct answer overlay for 5 seconds with countdown
-        // Show correct answer overlay for 5 seconds with countdown
+        const nextRoundCountdownRef = ref(
+          db,
+          `rooms/${roomId}/nextRoundCountdown`
+        );
+        const countdownDuration = 5;
+        await set(nextRoundCountdownRef, {
+          startAt: Date.now(),
+          duration: countdownDuration,
+          correctAnswer: correctAnswer,
+        });
+
+        // Show overlay for all clients
         setShowNextRoundOverlay(true);
 
-        let counter = 5;
-
-        const countdown = setInterval(() => {
-          counter--; // decrement first
-          if (counter <= 0) {
-            clearInterval(countdown);
-            setNextRoundCountdown(null);
-            setShowNextRoundOverlay(false);
-            startNewRound(); // immediately start next round
-          } else {
-            setNextRoundCountdown(counter);
-          }
-        }, 1000);
+        // Countdown handled by client useEffect observing nextRoundCountdownRef
+        // After countdown ends, host starts next round
+        setTimeout(async () => {
+          await remove(nextRoundCountdownRef);
+          setShowNextRoundOverlay(false);
+          if (isHost) startNewRound();
+        }, countdownDuration * 1000);
       }
     } catch (err) {
       console.error("evaluateRound error", err);
