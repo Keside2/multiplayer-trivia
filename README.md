@@ -1,73 +1,142 @@
-# React + TypeScript + Vite
+🎮 Multiplayer Trivia Game
+A real-time multiplayer trivia game built with React, TypeScript, and Firebase Realtime Database. Players can create or join rooms, compete in trivia rounds, and chat live. Fast answers earn bonus points!
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🛠 Features
+Real-time multiplayer gameplay
+Create and join public/private rooms
+Automatic room cleanup when all players leave
+Host-controlled rounds
+Hosts can start new rounds and manage game flow
+Live leaderboard with real-time updates
+Highlights the current player
+Trivia questions fetched from Open Trivia Database (OpenTDB)
+Multiple difficulty levels: Easy, Medium, Hard
+Categories: General Knowledge, Science, Sports, History, Geography, Entertainment, Math
+Base points for correct answers + quick-answer bonus
+Live room chat for all players
+Round start countdown (3..2..1) for dramatic effect
+Confetti for winners
+🖥 UI Overview
+Welcome Screen: Enter a player name before joining or creating a room
+Lobby: Create a new room (select category, difficulty, number of questions) or join existing rooms via code or public room list
+Game Layout:
+Left/Main Panel: Current round question, options, timer, and round info
+Right Panel: Leaderboard and chat
+Overlays: Countdown before rounds, round summary, and game-over confetti
+Host vs Player: Host sees "Next Question" and "Restart Game" buttons; players see "Waiting for host"
+⚡ Installation
+Clone the repository
+git clone https://github.com/Keside2/multiplayer-trivia.git
+cd multiplayer-trivia/client
+Install dependencies
+npm install
+Firebase Setup
+Create a Firebase project
+Enable Realtime Database
+Copy your Firebase config into src/firebaseConfig.ts
+Example:
 
-Currently, two official plugins are available:
+// client/src/firebaseConfig.ts
+import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import type { User } from "firebase/auth";
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+// Your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCoRzWMG4Q8dYjLBMf-RQrAb2UPlt6tkjY",
+  authDomain: "multiplayer-trivia-63aab.firebaseapp.com",
+  databaseURL: "https://multiplayer-trivia-63aab-default-rtdb.firebaseio.com/",
+  projectId: "multiplayer-trivia-63aab",
+  storageBucket: "multiplayer-trivia-63aab.firebasestorage.app",
+  messagingSenderId: "409629060731",
+  appId: "1:409629060731:web:6315bdc870e76477de3cde",
+};
 
-## React Compiler
+// Initialize Firebase app
+const app = initializeApp(firebaseConfig);
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+// Export Realtime Database and Auth
+export const db = getDatabase(app);
+export const auth = getAuth(app);
 
-## Expanding the ESLint configuration
+// 🔹 Helper function for signing in anonymously
+export async function loginAnon(): Promise<User> {
+  await signInAnonymously(auth);
+  return new Promise((resolve) => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) resolve(user);
+    });
+  });
+}
+⚠️ Important: Replace the placeholder values with your own Firebase configuration.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Optional: Using environment variables
+Create a .env file in the project root:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_DATABASE_URL=your_db_url
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+Update firebaseConfig.ts to use import.meta.env values.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Start development server
+npm run dev
+Open http://localhost:5173 in your browser.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+🎮 How to Play
+Enter a player name
+Create a room or join a room
+If hosting:
+Start rounds with Next Question
+Monitor the leaderboard
+Players select answers before the timer runs out
+At round end:
+Quick summary of results
+Next round starts automatically
+Game ends when all questions are answered
+Winner is displayed with confetti
+Host can restart the game
+📂 Project Structure
+src/
+├─ App.tsx           # Main React component & game logic
+├─ firebaseConfig.ts # Firebase setup & auth
+├─ App.css           # Styling for layout & components
+public/
+├─ sounds/           # Sound effects (e.g., "newround.mp3")
+🔧 Tech Stack
+Frontend: React + TypeScript + Vite
+Realtime backend: Firebase Realtime Database
+Notifications: react-toastify
+UI helpers: react-use for window size, confetti animations
+Trivia API: Open Trivia DB
+⚠️ Known Issues / TODOs
+Only multiple-choice questions are supported
+Quick-answer bonus logic may not sync perfectly on slow networks
+Add more trivia categories
+Mobile UI optimization
+🤝 Contributing
+Fork the repository
+Create a new branch: git checkout -b feature/my-feature
+Make changes & commit: git commit -m "Add feature"
+Push to branch: git push origin feature/my-feature
+Open a pull request
+🚀 Deployment
+Build the app: npm run build
+Deploy using Vercel / Netlify / Firebase Hosting
+📝 License
+MIT License © 2025
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+📸 Screenshots / GIFs
+Game Layout
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Game Layout
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Game Layout
+
+Game Layout
+
+Game Layout
